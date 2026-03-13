@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
+
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
@@ -20,10 +21,13 @@ contract CardNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     /// @notice Rarity tiers for cards
     enum Rarity { Common, Rare, Epic, Legendary }
 
+    /// @notice Element types for the element triangle (Fire > Earth > Water > Fire)
+    enum Element { Fire, Water, Earth }
+
     struct CardStats {
         uint16 attack;
         uint16 defense;
-        uint16 speed;
+        Element element;
         Rarity rarity;
         bool exists; // guard for uninitialized token IDs
     }
@@ -74,11 +78,11 @@ contract CardNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         uint256 tokenId,
         uint16 attack,
         uint16 defense,
-        uint16 speed,
+        Element element,
         Rarity rarity
     ) external onlyOwner {
         if (tokenId == 0 || tokenId > MAX_CARD_TYPES) revert InvalidTokenId(tokenId);
-        cardStats[tokenId] = CardStats(attack, defense, speed, rarity, true);
+        cardStats[tokenId] = CardStats(attack, defense, element, rarity, true);
         emit CardStatsSet(tokenId, cardStats[tokenId]);
     }
 
@@ -155,6 +159,12 @@ contract CardNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     function getRarity(uint256 tokenId) external view returns (Rarity) {
         if (!cardStats[tokenId].exists) revert CardStatsNotSet(tokenId);
         return cardStats[tokenId].rarity;
+    }
+
+    /// @notice Get element for a token ID (convenience for BattleEngine)
+    function getElement(uint256 tokenId) external view returns (Element) {
+        if (!cardStats[tokenId].exists) revert CardStatsNotSet(tokenId);
+        return cardStats[tokenId].element;
     }
 
     // ─── Required Overrides ──────────────────────────────────────────────────

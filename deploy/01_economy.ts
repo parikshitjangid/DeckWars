@@ -88,23 +88,28 @@ async function main() {
 
     // ── Example card setup (20 card types) ───────────────────────────────────
     console.log("\n🃏 Initializing 20 card types...");
+    // Element enum: 0=Fire, 1=Water, 2=Earth
+    // Rarity enum: 0=Common, 1=Rare, 2=Epic, 3=Legendary
     const cardConfigs = [
-        // [tokenId, attack, defense, speed, rarity (0=Common,1=Rare,2=Epic,3=Legendary)]
-        [1, 70, 50, 60, 0], [2, 65, 55, 70, 0], [3, 80, 40, 55, 0], [4, 50, 80, 50, 0],
-        [5, 60, 70, 65, 0], // 5 Commons
-        [6, 90, 65, 70, 1], [7, 85, 75, 80, 1], [8, 95, 60, 75, 1], [9, 80, 90, 65, 1],
-        [10, 75, 85, 85, 1], // 5 Rares
-        [11, 110, 80, 85, 2], [12, 105, 90, 90, 2], [13, 120, 70, 80, 2], [14, 100, 100, 95, 2],
-        [15, 95, 95, 100, 2],// 5 Epics
-        [16, 140, 110, 110, 3], [17, 130, 120, 120, 3], [18, 150, 100, 105, 3],
-        [19, 120, 140, 125, 3], [20, 135, 130, 130, 3], // 5 Legendaries
+        // [tokenId, attack, defense, element, rarity]
+        [1, 3, 2, 0, 0], [2, 2, 4, 1, 0], [3, 4, 1, 2, 0], [4, 3, 3, 0, 0],
+        [5, 2, 3, 1, 0], // 5 Commons (ATK 1-4, DEF 1-4)
+        [6, 5, 4, 2, 1], [7, 6, 5, 0, 1], [8, 4, 7, 1, 1], [9, 5, 6, 2, 1],
+        [10, 6, 4, 0, 1], // 5 Rares (ATK 5-8, DEF 4-7)
+        [11, 7, 6, 1, 2], [12, 8, 7, 2, 2], [13, 9, 6, 0, 2], [14, 7, 8, 1, 2],
+        [15, 8, 7, 2, 2], // 5 Epics (ATK 7-9, DEF 6-8)
+        [16, 9, 8, 0, 3], [17, 10, 9, 1, 3], [18, 9, 10, 2, 3],
+        [19, 10, 8, 0, 3], [20, 10, 10, 1, 3], // 5 Legendaries (ATK 9-10, DEF 8-10)
     ];
 
-    for (const [id, atk, def, spd, rarity] of cardConfigs) {
-        await (await cardNFT.setCardStats(id, atk, def, spd, rarity)).wait();
-        await (await cardNFT.setSupplyCap(id, 10000)).wait();
+    // Supply caps per rarity: Common=unlimited(0), Rare=5000, Epic=2000, Legendary=500
+    const supplyCaps: Record<number, number> = { 0: 0, 1: 5000, 2: 2000, 3: 500 };
+    for (const [id, atk, def, element, rarity] of cardConfigs) {
+        await (await cardNFT.setCardStats(id, atk, def, element, rarity)).wait();
+        const cap = supplyCaps[rarity] || 0;
+        if (cap > 0) await (await cardNFT.setSupplyCap(id, cap)).wait();
     }
-    console.log("✅  All 20 card types initialized with stats and supply caps");
+    console.log("✅  All 20 card types initialized with stats, elements, and supply caps");
 
     // ── Register rarity pools in CraftingSystem ───────────────────────────────
     console.log("\n🔨 Registering rarity pools in CraftingSystem...");

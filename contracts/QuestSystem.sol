@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -218,5 +218,52 @@ contract QuestSystem is Ownable {
 
     function getCardVotes(uint256 seasonId, uint256 cardId) external view returns (uint256) {
         return cardVotes[seasonId][cardId];
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Convenience hooks (called by CraftingSystem, BattleEngine)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * @notice Called by CraftingSystem after a successful craft.
+     *         Increments the Crafter quest (index 1 by default).
+     */
+    function notifyCraft(address player) external {
+        if (!authorisedUpdater[msg.sender] && msg.sender != owner()) revert NotAuthorised();
+        // Quest index 1 = "Craft 3 cards" by default
+        _incrementQuestIfActive(player, currentSeasonId, 1, 1);
+    }
+
+    /**
+     * @notice Called by BattleEngine after a battle win.
+     *         Increments the battle-win quest (index 0 by default).
+     */
+    function notifyBattleWin(address player) external {
+        if (!authorisedUpdater[msg.sender] && msg.sender != owner()) revert NotAuthorised();
+        // Quest index 0 = "Win X battles" by default
+        _incrementQuestIfActive(player, currentSeasonId, 0, 1);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Internal
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function _incrementQuestIfActive(
+        address player,
+        uint256 seasonId,
+        uint256 questId,
+        uint256 amount
+    ) internal {
+        if (questId >= QUESTS_PER_SEASON) return;
+        Quest storage quest = seasonQuests[seasonId][questId];
+        if (!quest.active) return;
+        PlayerQuestData storage data = playerQuestData[seasonId][player][questId];
+        if (data.completed) return;
+        data.progress += amount;
+        emit QuestProgressUpdated(player, seasonId, questId, data.progress);
+        if (data.progress >= quest.targetProgress) {
+            data.completed = true;
+            emit QuestCompleted(player, seasonId, questId);
+        }
     }
 }

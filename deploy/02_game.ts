@@ -96,6 +96,19 @@ async function main() {
   const aiBattleAgentAddress = await aiBattleAgent.getAddress();
   console.log(`   ✅ AIBattleAgent: ${aiBattleAgentAddress}`);
 
+  // ── 7. BattleEngine ───────────────────────────────────────────────────────
+  console.log("7️⃣  Deploying BattleEngine...");
+  const BattleEngine = await ethers.getContractFactory("BattleEngine");
+  const battleEngine = await BattleEngine.deploy(
+    CARD_NFT_ADDRESS,
+    deckManagerAddress,
+    questSystemAddress,
+    rankSystemAddress
+  );
+  await battleEngine.waitForDeployment();
+  const battleEngineAddress = await battleEngine.getAddress();
+  console.log(`   ✅ BattleEngine: ${battleEngineAddress}`);
+
   // ── Wire contracts together ───────────────────────────────────────────────
   console.log("\n🔗 Wiring contracts...");
 
@@ -108,6 +121,11 @@ async function main() {
   tx = await questSystem.setAuthorisedUpdater(seasonEngineAddress, true);
   await tx.wait();
   console.log("   QuestSystem.setAuthorisedUpdater(SeasonEngine) ✅");
+
+  // QuestSystem → authorise BattleEngine as updater (for notifyBattleWin)
+  tx = await questSystem.setAuthorisedUpdater(battleEngineAddress, true);
+  await tx.wait();
+  console.log("   QuestSystem.setAuthorisedUpdater(BattleEngine) ✅");
 
   // QuestSystem → SeasonRewards for reward notification
   tx = await questSystem.setSeasonRewards(seasonRewardsAddress);
@@ -129,10 +147,20 @@ async function main() {
   await tx.wait();
   console.log("   RankSystem.setAuthorisedRecorder(AIBattleAgent) ✅");
 
+  // RankSystem → authorise BattleEngine as recorder
+  tx = await rankSystem.setAuthorisedRecorder(battleEngineAddress, true);
+  await tx.wait();
+  console.log("   RankSystem.setAuthorisedRecorder(BattleEngine) ✅");
+
   // RankSystem → authorise SeasonEngine as recorder (for resetSeasonRP)
   tx = await rankSystem.setAuthorisedRecorder(seasonEngineAddress, true);
   await tx.wait();
   console.log("   RankSystem.setAuthorisedRecorder(SeasonEngine) ✅");
+
+  // DeckManager → authorise BattleEngine as deck locker
+  tx = await deckManager.setAuthorisedLocker(battleEngineAddress, true);
+  await tx.wait();
+  console.log("   DeckManager.setAuthorisedLocker(BattleEngine) ✅");
 
   // ── Save addresses ────────────────────────────────────────────────────────
   const newAddresses: Record<string, string> = {
@@ -143,6 +171,7 @@ async function main() {
     SeasonRewards: seasonRewardsAddress,
     DeckManager:   deckManagerAddress,
     AIBattleAgent: aiBattleAgentAddress,
+    BattleEngine:  battleEngineAddress,
   };
 
   writeAddresses(newAddresses);
@@ -154,7 +183,7 @@ async function main() {
 
   const contracts = [
     "RankSystem", "SeasonEngine", "QuestSystem",
-    "SeasonRewards", "DeckManager", "AIBattleAgent"
+    "SeasonRewards", "DeckManager", "AIBattleAgent", "BattleEngine"
   ];
 
   for (const name of contracts) {

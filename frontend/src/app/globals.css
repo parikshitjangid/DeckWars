@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+}
+
+/* ─── Global base ────────────────────────────────────────────── */
+body {
+  background: radial-gradient(ellipse at top, #1a0a2e 0%, #0a0a0a 50%, #000 100%);
+  min-height: 100vh;
+}
+
+/* ─── Mobile safe area ───────────────────────────────────────── */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── Scrollbar styling ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── Card shimmer animation ─────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.card-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* ─── Pulse glow for legendary ───────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.6); }
+}
+
+.legendary-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ─── Energy bar pulse ───────────────────────────────────────── */
+@keyframes energy-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.energy-active {
+  animation: energy-pulse 1.5s ease-in-out infinite;
+}
+
+/* ─── Hit flash ──────────────────────────────────────────────── */
+@keyframes hit-flash {
+  0% { background-color: rgba(239, 68, 68, 0.5); }
+  100% { background-color: transparent; }
+}
+
+.hit-flash {
+  animation: hit-flash 0.3s ease-out;
+}
+
+/* ─── Victory celebration ────────────────────────────────────── */
+@keyframes celebrate {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.victory-pop {
+  animation: celebrate 0.5s ease-out;
+}

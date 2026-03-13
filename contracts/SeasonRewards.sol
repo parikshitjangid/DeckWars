@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @dev Minimal interface for CardNFT (ERC-1155) — Dev 1.
+/// @dev Minimal interface for CardNFT (ERC-1155) — matches actual CardNFT.mint() signature.
 interface ICardNFTMinter {
-    function mint(address to, uint256 id, uint256 amount, bytes calldata data) external;
+    function mint(address to, uint256 id, uint256 amount) external;
 }
 
 /// @dev Minimal interface for TreasuryVault — Dev 1.
@@ -253,7 +253,7 @@ contract SeasonRewards is Ownable, ReentrancyGuard {
         leaderboardRewardClaimed[seasonId][msg.sender] = true;
 
         if (address(cardNFT) != address(0)) {
-            cardNFT.mint(msg.sender, cardId, EXCLUSIVE_CARD_SUPPLY, "");
+            cardNFT.mint(msg.sender, cardId, EXCLUSIVE_CARD_SUPPLY);
         }
 
         emit RewardClaimed(msg.sender, seasonId, "leaderboard", cardId);
@@ -283,7 +283,7 @@ contract SeasonRewards is Ownable, ReentrancyGuard {
             }
         }
         if (cfg.exclusiveCardId > 0 && address(cardNFT) != address(0)) {
-            cardNFT.mint(msg.sender, cfg.exclusiveCardId, 1, "");
+            cardNFT.mint(msg.sender, cfg.exclusiveCardId, 1);
         }
 
         emit RewardClaimed(msg.sender, seasonId, "milestone", milestoneIndex);

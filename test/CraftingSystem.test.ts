@@ -17,10 +17,10 @@ describe("CraftingSystem", () => {
         cardNFT = await CardFactory.deploy("https://api.deckwars.io/metadata/{id}.json") as CardNFT;
 
         // Set up 15 cards: 5 Common, 5 Rare, 5 Epic
-        for (let id = 1; id <= 5; id++)  await cardNFT.setCardStats(id, 70, 50, 60, 0); // Common
-        for (let id = 6; id <= 10; id++) await cardNFT.setCardStats(id, 90, 65, 70, 1); // Rare
-        for (let id = 11; id <= 15; id++) await cardNFT.setCardStats(id, 110, 80, 85, 2); // Epic
-        for (let id = 16; id <= 20; id++) await cardNFT.setCardStats(id, 140, 110, 110, 3); // Legendary
+        for (let id = 1; id <= 5; id++)  await cardNFT.setCardStats(id, 3, 2, 0, 0); // Common, Fire
+        for (let id = 6; id <= 10; id++) await cardNFT.setCardStats(id, 6, 5, 1, 1); // Rare, Water
+        for (let id = 11; id <= 15; id++) await cardNFT.setCardStats(id, 8, 7, 2, 2); // Epic, Earth
+        for (let id = 16; id <= 20; id++) await cardNFT.setCardStats(id, 10, 9, 0, 3); // Legendary, Fire
 
         // Deploy CraftingSystem
         const CraftFactory = await ethers.getContractFactory("CraftingSystem");

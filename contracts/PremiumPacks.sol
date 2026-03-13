@@ -73,9 +73,9 @@ contract PremiumPacks is Ownable {
         hlusd    = IERC20(_hlusd);
 
         // Default config — owner can update via setPackConfig()
-        packConfigs[PackTier.Silver]  = PackConfig(5 ether,  3, 20, 0, 0);
-        packConfigs[PackTier.Gold]    = PackConfig(15 ether, 5, 10, 0, 0);
-        packConfigs[PackTier.Diamond] = PackConfig(40 ether, 10, 5, 0, 0);
+        packConfigs[PackTier.Silver]  = PackConfig(5 ether,  3, 50, 0, 0);
+        packConfigs[PackTier.Gold]    = PackConfig(15 ether, 5, 20, 0, 0);
+        packConfigs[PackTier.Diamond] = PackConfig(50 ether, 5, 10, 0, 0);
     }
 
     // ─── Admin ───────────────────────────────────────────────────────────────

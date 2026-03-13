@@ -113,6 +113,32 @@ contract TreasuryVault is Ownable {
         emit RevenueDistributed(devAmount, prizeAmount);
     }
 
+    /// @notice Addresses allowed to withdraw from prize pool (SeasonRewards, AIBattleAgent)
+    mapping(address => bool) public authorizedWithdrawers;
+
+    /// @notice Authorize a contract to withdraw from the vault (SeasonRewards, etc.)
+    function authorizeWithdrawer(address withdrawer) external onlyOwner {
+        authorizedWithdrawers[withdrawer] = true;
+    }
+
+    /// @notice Revoke a withdrawer
+    function revokeWithdrawer(address withdrawer) external onlyOwner {
+        authorizedWithdrawers[withdrawer] = false;
+    }
+
+    /**
+     * @notice Withdraw HLUSD from the vault to a specified address.
+     *         Called by SeasonRewards for rank/milestone/leaderboard payouts.
+     * @param to      Recipient address.
+     * @param amount  Amount of HLUSD to send (18 decimals).
+     */
+    function withdrawFromPrizePool(address to, uint256 amount) external {
+        require(authorizedWithdrawers[msg.sender] || msg.sender == owner(), "Not authorized");
+        uint256 balance = hlusd.balanceOf(address(this));
+        require(balance >= amount, "Insufficient vault balance");
+        hlusd.safeTransfer(to, amount);
+    }
+
     /// @notice View current HLUSD balance held in the vault
     function vaultBalance() external view returns (uint256) {
         return hlusd.balanceOf(address(this));

@@ -80,7 +80,7 @@ contract SeasonPass is Ownable {
         treasury          = TreasuryVault(_treasury);
         hlusd             = IERC20(_hlusd);
         currentSeasonId   = 1;
-        passPriceHLUSD    = 20 ether;  // 20 HLUSD — adjustable via setPurchasePrice
+        passPriceHLUSD    = 10 ether;  // 10 HLUSD — matches design doc
         xpPerLevel        = 100;       // 100 XP per level
         multiplierThreshold = 1;       // any active pass owner gets 2× multiplier
     }

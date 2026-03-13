@@ -18,24 +18,24 @@ describe("CardNFT", () => {
 
     describe("Card Stats", () => {
         it("owner can set card stats for valid token IDs", async () => {
-            await cardNFT.setCardStats(1, 70, 50, 60, 0); // Common
+            await cardNFT.setCardStats(1, 3, 2, 0, 0); // Common, Fire
             const stats = await cardNFT.getCardStats(1);
-            expect(stats.attack).to.equal(70);
-            expect(stats.defense).to.equal(50);
-            expect(stats.speed).to.equal(60);
+            expect(stats.attack).to.equal(3);
+            expect(stats.defense).to.equal(2);
+            expect(stats.element).to.equal(0); // Fire
             expect(stats.rarity).to.equal(0); // Common
         });
 
         it("reverts for token ID 0", async () => {
-            await expect(cardNFT.setCardStats(0, 70, 50, 60, 0)).to.be.reverted;
+            await expect(cardNFT.setCardStats(0, 3, 2, 0, 0)).to.be.reverted;
         });
 
         it("reverts for token ID > 20", async () => {
-            await expect(cardNFT.setCardStats(21, 70, 50, 60, 0)).to.be.reverted;
+            await expect(cardNFT.setCardStats(21, 3, 2, 0, 0)).to.be.reverted;
         });
 
         it("non-owner cannot set card stats", async () => {
-            await expect(cardNFT.connect(other).setCardStats(1, 70, 50, 60, 0)).to.be.reverted;
+            await expect(cardNFT.connect(other).setCardStats(1, 3, 2, 0, 0)).to.be.reverted;
         });
     });
 
@@ -46,7 +46,7 @@ describe("CardNFT", () => {
         });
 
         it("minting beyond supply cap reverts", async () => {
-            await cardNFT.setCardStats(1, 70, 50, 60, 0);
+            await cardNFT.setCardStats(1, 3, 2, 0, 0);
             await cardNFT.setSupplyCap(1, 2);      // cap = 2
             await cardNFT.addMinter(minter.address);
 
@@ -57,7 +57,7 @@ describe("CardNFT", () => {
 
     describe("Minter Access Control", () => {
         beforeEach(async () => {
-            await cardNFT.setCardStats(1, 70, 50, 60, 0);
+            await cardNFT.setCardStats(1, 3, 2, 0, 0);
         });
 
         it("unauthorized address cannot mint", async () => {
@@ -86,7 +86,7 @@ describe("CardNFT", () => {
 
     describe("Total Supply", () => {
         it("tracks total supply correctly after minting", async () => {
-            await cardNFT.setCardStats(2, 65, 55, 70, 0);
+            await cardNFT.setCardStats(2, 2, 4, 1, 0);
             await cardNFT.addMinter(minter.address);
             await cardNFT.connect(minter).mint(player.address, 2, 10);
             const supply = await cardNFT["totalSupply(uint256)"](2);
@@ -96,7 +96,7 @@ describe("CardNFT", () => {
 
     describe("Rarity Getter", () => {
         it("returns correct rarity", async () => {
-            await cardNFT.setCardStats(16, 140, 110, 110, 3); // Legendary
+            await cardNFT.setCardStats(16, 9, 8, 0, 3); // Legendary
             expect(await cardNFT.getRarity(16)).to.equal(3);
         });
 
