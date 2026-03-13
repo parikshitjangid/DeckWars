@@ -1,0 +1,11 @@
+node_modules/
+artifacts/
+cache/
+dist/
+typechain-types/
+
+# Environment
+.env
+
+# Deployment output (keep the file, ignore large caches)
+!deployedAddresses.json
