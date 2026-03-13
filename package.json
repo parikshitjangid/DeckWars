@@ -1,7 +1,7 @@
 {
   "name": "deckwars",
   "version": "1.0.0",
-  "description": "",
+  "description": "DeckWars on-chain card game — HeLa L1",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -12,6 +12,8 @@
     "test:coverage": "hardhat coverage",
     "deploy:testnet": "hardhat run deploy/01_economy.ts --network hela_testnet",
     "deploy:local": "hardhat run deploy/01_economy.ts --network hardhat",
+    "deploy:game": "hardhat run deploy/02_game.ts --network hela_testnet",
+    "deploy:game:local": "hardhat run deploy/02_game.ts --network localhost",
     "export:abis": "hardhat run scripts/export-abis.ts",
     "node": "hardhat node"
   },

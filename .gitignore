@@ -6,3 +6,9 @@ dist/
 typechain-types/
 coverage/
 coverage.json
+
+# Environment
+.env
+
+# Deployment output (keep the file, ignore large caches)
+!deployedAddresses.json

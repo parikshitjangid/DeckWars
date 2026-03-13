@@ -17,7 +17,8 @@ describe("TreasuryVault", () => {
 
         // Deploy a minimal ERC-20 mock for HLUSD
         const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
-        mockHLUSD = await ERC20Mock.deploy("HeLa USD", "HLUSD", owner.address, ethers.parseEther("1000000"));
+        mockHLUSD = await ERC20Mock.deploy("HeLa USD", "HLUSD");
+        await mockHLUSD.mint(owner.address, ethers.parseEther("1000000"));
 
         // Deploy TreasuryVault
         const Factory = await ethers.getContractFactory("TreasuryVault");

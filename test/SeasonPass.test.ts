@@ -17,7 +17,8 @@ describe("SeasonPass", () => {
 
         // Deploy mock HLUSD
         const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
-        mockHLUSD = await ERC20Mock.deploy("HeLa USD", "HLUSD", owner.address, ethers.parseEther("1000000"));
+        mockHLUSD = await ERC20Mock.deploy("HeLa USD", "HLUSD");
+        await mockHLUSD.mint(owner.address, ethers.parseEther("1000000"));
 
         // Give player HLUSD
         await mockHLUSD.transfer(player.address, ethers.parseEther("500"));
