@@ -70,7 +70,12 @@ function BattlePageContent() {
   const [isOnChain, setIsOnChain] = useState(false);
 
   // Wager approvals
-  const { approve: approveHLUSD, isPending: isApprovePending, error: approveError } = useApproveHLUSD();
+  const { 
+    approve: approveHLUSD, 
+    isPending: isApprovePending, 
+    isSuccess: isApproveSuccess,
+    error: approveError 
+  } = useApproveHLUSD();
   
   // PvP Wager Allowance
   const hlusdAllowance = useHLUSDAllowance(CONTRACTS.BattleEngine as Address);
@@ -426,25 +431,31 @@ function BattlePageContent() {
                     </p>
                   )}
 
-                  {parseUnits(aiWagerInput || '0', 18) > BigInt(0) && aiAllowanceValue < parseUnits(aiWagerInput || '0', 18) ? (
-                    <button
-                      onClick={() => {
-                        console.log('🟢 AI Approve Clicked for:', CONTRACTS.AIBattleAgent);
-                        approveHLUSD(CONTRACTS.AIBattleAgent as Address, parseUnits(aiWagerInput, 18));
-                      }}
-                      disabled={isApprovePending}
-                      className="w-full py-2 bg-blue-500 text-white font-bold rounded-xl hover:shadow-lg transition-all cursor-pointer disabled:opacity-40 text-sm"
-                    >
-                      {isApprovePending ? '⏳ Approving...' : '1. Approve AI Wager'}
-                    </button>
+                  {/* Approval / Battle Buttons */}
+                  {parseUnits(aiWagerInput || '0', 18) > BigInt(0) && aiAllowanceValue < parseUnits(aiWagerInput || '0', 18) && !isApproveSuccess ? (
+                    <div className="space-y-2">
+                       <button
+                        onClick={() => approveHLUSD(CONTRACTS.AIBattleAgent as Address, parseUnits(aiWagerInput, 18))}
+                        disabled={isApprovePending}
+                        className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all cursor-pointer disabled:opacity-40"
+                      >
+                        {isApprovePending ? '⏳ Awaiting Wallet...' : '🔐 Approve HLUSD Wager'}
+                      </button>
+                      <p className="text-[10px] text-gray-500 text-center">First, approve the game to use HLUSD for the wager.</p>
+                    </div>
                   ) : (
-                    <button
-                      onClick={startDemoBattle}
-                      disabled={isAiChallengePending}
-                      className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-black font-bold rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all cursor-pointer"
-                    >
-                      {isAiChallengePending ? '⏳ Challenging AI...' : (parseUnits(aiWagerInput || '0', 18) > BigInt(0) ? '2. Battle AI (Wager)' : '🤖 Battle AI (Free)')}
-                    </button>
+                    <div className="space-y-2">
+                      {isApproveSuccess && aiAllowanceValue < parseUnits(aiWagerInput || '0', 18) && (
+                        <p className="text-green-400 text-[10px] text-center font-bold mb-1">✅ Approval Confirmed! Ready to play.</p>
+                      )}
+                      <button
+                        onClick={startDemoBattle}
+                        disabled={isAiChallengePending}
+                        className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-black font-black rounded-xl hover:shadow-lg hover:shadow-orange-500/40 transition-all cursor-pointer"
+                      >
+                        {isAiChallengePending ? '⏳ Creating Match...' : (parseUnits(aiWagerInput || '0', 18) > BigInt(0) ? '⚔️ Start Battle (Wager)' : '🤖 Start Battle (Free)')}
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
