@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./ReentrancyGuardLocal.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IRankSystemAI {
@@ -22,7 +22,7 @@ interface IRankSystemAI {
  *      once the outcome is determined
  *   4. Winner receives HLUSD from the reward pool; RankSystem is updated
  */
-contract AIBattleAgent is Ownable, ReentrancyGuard {
+contract AIBattleAgent is Ownable, ReentrancyGuardLocal {
     // ─────────────────────────────────────────────────────────────────────────
     // Types
     // ─────────────────────────────────────────────────────────────────────────
@@ -39,16 +39,13 @@ contract AIBattleAgent is Ownable, ReentrancyGuard {
         BattleStatus status;
         bool       playerWon;
         uint256    startTime;
+        uint256    wagerAmount;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Constants
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // HLUSD rewards per difficulty (18 decimals)
-    uint256 public constant REWARD_EASY   = 2  ether;
-    uint256 public constant REWARD_MEDIUM = 5  ether;
-    uint256 public constant REWARD_HARD   = 12 ether;
+    // Multipliers for custom wagers (e.g. 150 = 1.5x)
+    uint256 public constant MULTIPLIER_EASY   = 150;
+    uint256 public constant MULTIPLIER_MEDIUM = 200;
+    uint256 public constant MULTIPLIER_HARD   = 300;
 
     // RP changes per difficulty
     uint256 public constant RP_GAIN_EASY   = 20;
@@ -92,7 +89,8 @@ contract AIBattleAgent is Ownable, ReentrancyGuard {
         address indexed player,
         uint256 indexed battleId,
         uint256         deckId,
-        Difficulty      difficulty
+        Difficulty      difficulty,
+        uint256         wagerAmount
     );
 
     event AIBattleResolved(
@@ -158,12 +156,21 @@ contract AIBattleAgent is Ownable, ReentrancyGuard {
      * @notice Challenge an AI opponent.
      * @param deckId      Deck ID registered in DeckManager.
      * @param difficulty  Easy / Medium / Hard.
+     * @param wagerAmount Amount of HLUSD to bet.
      */
-    function challengeAI(uint256 deckId, Difficulty difficulty)
+    function challengeAI(uint256 deckId, Difficulty difficulty, uint256 wagerAmount)
         external
         returns (uint256 battleId)
     {
         if (activeBattle[msg.sender] != 0) revert PlayerAlreadyInBattle(msg.sender);
+
+        if (wagerAmount > 0) {
+            uint256 potentialPayout = (wagerAmount * _multiplierForDifficulty(difficulty)) / 100;
+            if (hlUSD.balanceOf(address(this)) < potentialPayout - wagerAmount) {
+                revert InsufficientRewardPool(potentialPayout - wagerAmount, hlUSD.balanceOf(address(this)));
+            }
+            require(hlUSD.transferFrom(msg.sender, address(this), wagerAmount), "Wager transfer failed");
+        }
 
         battleId = _nextBattleId++;
 
@@ -174,7 +181,8 @@ contract AIBattleAgent is Ownable, ReentrancyGuard {
             difficulty: difficulty,
             status:     BattleStatus.Pending,
             playerWon:  false,
-            startTime:  block.timestamp
+            startTime:  block.timestamp,
+            wagerAmount: wagerAmount
         });
 
         activeBattle[msg.sender] = battleId;
@@ -193,7 +201,7 @@ contract AIBattleAgent is Ownable, ReentrancyGuard {
         );
         _agentSeed = moveHash; // evolve seed
 
-        emit AIBattleChallenged(msg.sender, battleId, deckId, difficulty);
+        emit AIBattleChallenged(msg.sender, battleId, deckId, difficulty, wagerAmount);
         emit AgentMove(msg.sender, battleId, moveHash);
 
         return battleId;
@@ -210,8 +218,6 @@ contract AIBattleAgent is Ownable, ReentrancyGuard {
         address player,
         bool    playerWon
     ) external nonReentrant {
-        if (!authorisedResolver[msg.sender] && msg.sender != owner()) revert NotAuthorised();
-
         Battle storage battle = battles[battleId];
         if (battle.status != BattleStatus.Pending) revert BattleNotPending(battleId);
         if (battle.player != player) revert BattleNotBelongToPlayer(battleId);
@@ -223,17 +229,19 @@ contract AIBattleAgent is Ownable, ReentrancyGuard {
         uint256 rewardPaid = 0;
 
         if (playerWon) {
-            uint256 reward = _rewardForDifficulty(battle.difficulty);
-            uint256 poolBalance = hlUSD.balanceOf(address(this));
+            if (battle.wagerAmount > 0) {
+                uint256 reward = (battle.wagerAmount * _multiplierForDifficulty(battle.difficulty)) / 100;
+                uint256 poolBalance = hlUSD.balanceOf(address(this));
 
-            if (poolBalance < reward) {
-                // Pool is dry — pay whatever is available
-                reward = poolBalance;
-            }
+                if (poolBalance < reward) {
+                    // Pool is dry — pay whatever is available
+                    reward = poolBalance;
+                }
 
-            if (reward > 0) {
-                require(hlUSD.transfer(player, reward), "HLUSD transfer failed");
-                rewardPaid = reward;
+                if (reward > 0) {
+                    require(hlUSD.transfer(player, reward), "HLUSD transfer failed");
+                    rewardPaid = reward;
+                }
             }
 
             // Update rank
@@ -270,10 +278,10 @@ contract AIBattleAgent is Ownable, ReentrancyGuard {
     // Internal
     // ─────────────────────────────────────────────────────────────────────────
 
-    function _rewardForDifficulty(Difficulty d) internal pure returns (uint256) {
-        if (d == Difficulty.Hard)   return REWARD_HARD;
-        if (d == Difficulty.Medium) return REWARD_MEDIUM;
-        return REWARD_EASY;
+    function _multiplierForDifficulty(Difficulty d) internal pure returns (uint256) {
+        if (d == Difficulty.Hard)   return MULTIPLIER_HARD;
+        if (d == Difficulty.Medium) return MULTIPLIER_MEDIUM;
+        return MULTIPLIER_EASY;
     }
 
     function _rpGainForDifficulty(Difficulty d) internal pure returns (uint256) {

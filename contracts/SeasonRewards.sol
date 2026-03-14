@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./ReentrancyGuardLocal.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Minimal interface for CardNFT (ERC-1155) — matches actual CardNFT.mint() signature.
@@ -41,7 +41,7 @@ interface IRankSystemRewards {
  *
  *   All rewards have a 90-day claim window from season finalization.
  */
-contract SeasonRewards is Ownable, ReentrancyGuard {
+contract SeasonRewards is Ownable, ReentrancyGuardLocal {
     // ─────────────────────────────────────────────────────────────────────────
     // Types
     // ─────────────────────────────────────────────────────────────────────────

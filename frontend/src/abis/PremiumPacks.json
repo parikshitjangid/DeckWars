@@ -1,0 +1,459 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_cardNFT",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_hlusd",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientAllowance",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      }
+    ],
+    "name": "NoTokensConfiguredForTier",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      }
+    ],
+    "name": "PackSupplyExhausted",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "priceHLUSD",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "cardsPerPack",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "pityCap",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "supplyCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalOpened",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct PremiumPacks.PackConfig",
+        "name": "config",
+        "type": "tuple"
+      }
+    ],
+    "name": "PackConfigUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "tokenIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "PackOpened",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      }
+    ],
+    "name": "PityTriggered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "tokenIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "TierTokenSet",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "cardNFT",
+    "outputs": [
+      {
+        "internalType": "contract CardNFT",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      }
+    ],
+    "name": "getPityCounter",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      }
+    ],
+    "name": "getTierTokenIds",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "hlusd",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      }
+    ],
+    "name": "openPack",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "mintedTokenIds",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "name": "packConfigs",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "priceHLUSD",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "cardsPerPack",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint16",
+        "name": "pityCap",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint256",
+        "name": "supplyCap",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalOpened",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "name": "pityCounter",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "priceHLUSD",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "cardsPerPack",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint16",
+        "name": "pityCap",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint256",
+        "name": "supplyCap",
+        "type": "uint256"
+      }
+    ],
+    "name": "setPackConfig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum PremiumPacks.PackTier",
+        "name": "tier",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "setTierTokenIds",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "treasury",
+    "outputs": [
+      {
+        "internalType": "contract TreasuryVault",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

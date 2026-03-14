@@ -1,0 +1,1132 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_cardNFT",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_deckManager",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_questSystem",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_rankSystem",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_hlusd",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      }
+    ],
+    "name": "AddressEmptyCode",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "AddressInsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      }
+    ],
+    "name": "BattleNotActive",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      }
+    ],
+    "name": "BattleNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      }
+    ],
+    "name": "BattleNotPending",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CannotChallengeSelf",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FailedInnerCall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "HLUSDNotConfigured",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidCardIndex",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      }
+    ],
+    "name": "NotBattleParticipant",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "required",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "available",
+        "type": "uint256"
+      }
+    ],
+    "name": "NotEnoughEnergy",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      }
+    ],
+    "name": "NotYourTurn",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      }
+    ],
+    "name": "PlayerAlreadyInBattle",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TurnNotTimedOut",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WagerTransferFailed",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "acceptor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "deckId",
+        "type": "uint256"
+      }
+    ],
+    "name": "BattleAccepted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "canceller",
+        "type": "address"
+      }
+    ],
+    "name": "BattleCancelled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "challenger",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "opponent",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "deckId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "wagerAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "BattleCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "winner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "loser",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "winnerHP",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalTurns",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "potPaid",
+        "type": "uint256"
+      }
+    ],
+    "name": "BattleResolved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "cardId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum BattleEngine.MoveType",
+        "name": "moveType",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "damage",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "elementResult",
+        "type": "string"
+      }
+    ],
+    "name": "MoveMade",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "WagerDeposited",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "WagerRefunded",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "ELEMENT_BONUS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_ENERGY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_DAMAGE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RP_FAST_WIN",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RP_HEALTHY_WIN",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RP_LOSS_BASE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RP_WIN_BASE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "STARTING_HP",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "TURN_TIMEOUT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "deckId",
+        "type": "uint256"
+      }
+    ],
+    "name": "acceptBattle",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "activeBattle",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "battles",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "player",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deckId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "hp",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "energy",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "specialUsed",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "defending",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256[5]",
+            "name": "hand",
+            "type": "uint256[5]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "handSize",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BattleEngine.PlayerState",
+        "name": "playerA",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "player",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deckId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int256",
+            "name": "hp",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "energy",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "specialUsed",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "defending",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256[5]",
+            "name": "hand",
+            "type": "uint256[5]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "handSize",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BattleEngine.PlayerState",
+        "name": "playerB",
+        "type": "tuple"
+      },
+      {
+        "internalType": "enum BattleEngine.BattleStatus",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "currentTurn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "turnNumber",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "turnDeadline",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalDamageA",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalDamageB",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "winner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "wagerAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "playerADeposited",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "playerBDeposited",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      }
+    ],
+    "name": "cancelChallenge",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "cardNFT",
+    "outputs": [
+      {
+        "internalType": "contract ICardNFTBattle",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "opponent",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "deckId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "wagerAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "challengePlayer",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      }
+    ],
+    "name": "claimTimeout",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "deckManager",
+    "outputs": [
+      {
+        "internalType": "contract IDeckManagerBattle",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getBattle",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "playerA",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "playerB",
+        "type": "address"
+      },
+      {
+        "internalType": "int256",
+        "name": "hpA",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "hpB",
+        "type": "int256"
+      },
+      {
+        "internalType": "enum BattleEngine.BattleStatus",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "currentTurn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "turnNumber",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "turnDeadline",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "winner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "wagerAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pot",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      }
+    ],
+    "name": "getPlayerHand",
+    "outputs": [
+      {
+        "internalType": "uint256[5]",
+        "name": "hand",
+        "type": "uint256[5]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "handSize",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "energy",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "hlusd",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      }
+    ],
+    "name": "isBattleActive",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "battleId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "handIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum BattleEngine.MoveType",
+        "name": "move",
+        "type": "uint8"
+      }
+    ],
+    "name": "makeMove",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "questSystem",
+    "outputs": [
+      {
+        "internalType": "contract IQuestSystemBattle",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rankSystem",
+    "outputs": [
+      {
+        "internalType": "contract IRankSystemBattle",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_cardNFT",
+        "type": "address"
+      }
+    ],
+    "name": "setCardNFT",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_deckManager",
+        "type": "address"
+      }
+    ],
+    "name": "setDeckManager",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_hlusd",
+        "type": "address"
+      }
+    ],
+    "name": "setHLUSD",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_questSystem",
+        "type": "address"
+      }
+    ],
+    "name": "setQuestSystem",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_rankSystem",
+        "type": "address"
+      }
+    ],
+    "name": "setRankSystem",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -11,7 +11,7 @@ const config: HardhatUserConfig = {
     version: "0.8.28",
     settings: {
       optimizer: { enabled: true, runs: 200 },
-      evmVersion: "cancun",
+      evmVersion: "paris",
       viaIR: true,
     },
   },
@@ -25,7 +25,10 @@ const config: HardhatUserConfig = {
     hela_testnet: {
       url: HELA_TESTNET_RPC,
       accounts: [`0x${PRIVATE_KEY}`],
-      chainId: 666301, // Verify with HeLa
+      chainId: 666888,
+      timeout: 120000,
+      gas: 8000000,           // explicit gas limit (8M) — bypass estimateGas
+      gasPrice: 100000000000, // 100 gwei — HeLa testnet minimum
     },
   },
   paths: {

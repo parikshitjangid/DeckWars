@@ -34,7 +34,7 @@ async function main() {
 
   const CARD_NFT_ADDRESS    = existing.CardNFT        || ethers.ZeroAddress;
   const TREASURY_ADDRESS    = existing.TreasuryVault   || ethers.ZeroAddress;
-  const HLUSD_ADDRESS       = existing.HLUSDToken      || ethers.ZeroAddress;
+  const HLUSD_ADDRESS       = process.env.HLUSD_ADDRESS || existing.HLUSDToken || ethers.ZeroAddress;
 
   console.log(`   CardNFT       : ${CARD_NFT_ADDRESS}`);
   console.log(`   TreasuryVault : ${TREASURY_ADDRESS}`);
@@ -103,7 +103,8 @@ async function main() {
     CARD_NFT_ADDRESS,
     deckManagerAddress,
     questSystemAddress,
-    rankSystemAddress
+    rankSystemAddress,
+    HLUSD_ADDRESS       // ← new: for HLUSD wager escrow
   );
   await battleEngine.waitForDeployment();
   const battleEngineAddress = await battleEngine.getAddress();

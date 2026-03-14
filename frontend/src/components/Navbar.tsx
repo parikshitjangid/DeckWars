@@ -7,6 +7,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 const NAV_ITEMS = [
   { href: '/',           label: 'Home',       icon: '🏠' },
   { href: '/collection', label: 'Collection', icon: '🃏' },
+  { href: '/packs',      label: 'Packs',      icon: '📦' },
   { href: '/deck',       label: 'Deck',       icon: '📋' },
   { href: '/battle',     label: 'Battle',     icon: '⚔️' },
   { href: '/crafting',   label: 'Crafting',   icon: '🔨' },

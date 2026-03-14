@@ -1,14 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import { useAccount } from 'wagmi';
 import Card from '@/components/Card';
 import { ALL_CARDS, type CardData } from '@/config/wagmi';
+import { useRegisterDeck, useContractsReady, useAllCardBalances } from '@/hooks/useContracts';
 
 const DECK_SIZE = 20;
 
 export default function DeckPage() {
   const [deck, setDeck] = useState<CardData[]>([]);
   const [deckName, setDeckName] = useState('My Deck');
+  const { isConnected } = useAccount();
+  const contractsReady = useContractsReady();
+  const { registerDeck, isPending, isConfirming, isSuccess, error } = useRegisterDeck();
+  const balanceResults = useAllCardBalances();
+
+  // Build owned map
+  const ownedCards: Record<number, number> = {};
+  ALL_CARDS.forEach((card, i) => {
+    if (contractsReady && balanceResults[i]?.data !== undefined) {
+      ownedCards[card.id] = Number(balanceResults[i].data);
+    } else {
+      ownedCards[card.id] = 99; // demo: unlimited
+    }
+  });
 
   const toggleCard = (card: CardData) => {
     const idx = deck.findIndex((c) => c.id === card.id);
@@ -30,10 +46,22 @@ export default function DeckPage() {
     ? (deck.reduce((sum, c) => sum + c.energyCost, 0) / deck.length).toFixed(1)
     : '0.0';
 
+  const handleSave = () => {
+    if (deck.length !== DECK_SIZE) return;
+    if (contractsReady && isConnected) {
+      registerDeck(deck.map((c) => c.id));
+    } else {
+      alert('Connect your wallet and deploy contracts first to save on-chain!');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <h1 className="text-3xl font-bold mb-6">
         <span className="mr-2">📋</span> Deck Builder
+        {!contractsReady && (
+          <span className="ml-3 text-yellow-500/70 text-xs font-normal">(demo mode)</span>
+        )}
       </h1>
 
       <div className="grid md:grid-cols-3 gap-6">
@@ -48,6 +76,7 @@ export default function DeckPage() {
                 size="sm"
                 selected={isSelected(card.id)}
                 onClick={() => toggleCard(card)}
+                owned={ownedCards[card.id]}
               />
             ))}
           </div>
@@ -112,16 +141,41 @@ export default function DeckPage() {
             )}
           </div>
 
+          {/* Transaction states */}
+          {isPending && (
+            <div className="mt-3 text-center text-yellow-400 text-xs animate-pulse">
+              ⏳ Confirm in your wallet...
+            </div>
+          )}
+          {isConfirming && (
+            <div className="mt-3 text-center text-cyan-400 text-xs animate-pulse">
+              ⛓️ Confirming on chain...
+            </div>
+          )}
+          {isSuccess && (
+            <div className="mt-3 text-center text-green-400 text-xs">
+              ✅ Deck saved on-chain!
+            </div>
+          )}
+          {error && (
+            <div className="mt-3 text-center text-red-400 text-xs truncate">
+              ❌ {error.message?.slice(0, 80)}...
+            </div>
+          )}
+
           {/* Save button */}
           <button
-            disabled={deck.length !== DECK_SIZE}
+            disabled={deck.length !== DECK_SIZE || isPending || isConfirming}
+            onClick={handleSave}
             className={`w-full mt-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
-              deck.length === DECK_SIZE
+              deck.length === DECK_SIZE && !isPending && !isConfirming
                 ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-black hover:shadow-lg hover:shadow-orange-500/25 cursor-pointer'
                 : 'bg-gray-800 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {deck.length === DECK_SIZE ? '💾 Save Deck On-Chain' : `Need ${DECK_SIZE - deck.length} more cards`}
+            {isPending ? '⏳ Confirming...' :
+             isConfirming ? '⛓️ On-Chain...' :
+             deck.length === DECK_SIZE ? '💾 Save Deck On-Chain' : `Need ${DECK_SIZE - deck.length} more cards`}
           </button>
         </div>
       </div>

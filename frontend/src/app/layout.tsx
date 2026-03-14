@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
+import StarterPackModal from "@/components/StarterPackModal";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,11 +16,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -28,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-gray-950 text-white font-sans antialiased">
         <Providers>
           <Navbar />
+          <StarterPackModal />
           <main className="pt-16 pb-20 md:pb-6 min-h-screen">
             {children}
           </main>
