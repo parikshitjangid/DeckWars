@@ -1,7 +1,7 @@
 'use client';
 
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { defineChain } from 'viem';
+import { defineChain, getAddress } from 'viem';
 
 /* ── HeLa L1 Testnet chain definition ────────────────────────── */
 export const helaTestnet = defineChain({
@@ -25,21 +25,32 @@ export const config = getDefaultConfig({
   ssr: true,
 });
 
+/* ── Helper: Safe address checksum ───────────────────────────── */
+const safeAddr = (addr: string | undefined) => {
+  if (!addr || addr === '0x...' || addr === '') return '';
+  try {
+    return getAddress(addr);
+  } catch (e) {
+    console.warn(`⚠️ Invalid address in config: ${addr}`);
+    return addr;
+  }
+};
+
 /* ── Contract addresses (filled after deploy) ────────────────── */
 export const CONTRACTS = {
-  CardNFT:       process.env.NEXT_PUBLIC_CARD_NFT       || '',
-  DeckManager:   process.env.NEXT_PUBLIC_DECK_MANAGER   || '',
-  BattleEngine:  process.env.NEXT_PUBLIC_BATTLE_ENGINE  || '',
-  AIBattleAgent: process.env.NEXT_PUBLIC_AI_AGENT_ADDRESS || '',
-  QuestSystem:   process.env.NEXT_PUBLIC_QUEST_SYSTEM   || '',
-  RankSystem:    process.env.NEXT_PUBLIC_RANK_SYSTEM    || '',
-  SeasonEngine:  process.env.NEXT_PUBLIC_SEASON_ENGINE  || '',
-  SeasonRewards: process.env.NEXT_PUBLIC_SEASON_REWARDS || '',
-  CraftingSystem:process.env.NEXT_PUBLIC_CRAFTING       || '',
-  PremiumPacks:  process.env.NEXT_PUBLIC_PREMIUM_PACKS  || '',
-  SeasonPass:    process.env.NEXT_PUBLIC_SEASON_PASS    || '',
-  TreasuryVault: process.env.NEXT_PUBLIC_TREASURY       || '',
-  HLUSD:         process.env.NEXT_PUBLIC_HLUSD          || '',
+  CardNFT:       safeAddr(process.env.NEXT_PUBLIC_CARD_NFT),
+  DeckManager:   safeAddr(process.env.NEXT_PUBLIC_DECK_MANAGER),
+  BattleEngine:  safeAddr(process.env.NEXT_PUBLIC_BATTLE_ENGINE),
+  AIBattleAgent: safeAddr(process.env.NEXT_PUBLIC_AI_AGENT_ADDRESS),
+  QuestSystem:   safeAddr(process.env.NEXT_PUBLIC_QUEST_SYSTEM),
+  RankSystem:    safeAddr(process.env.NEXT_PUBLIC_RANK_SYSTEM),
+  SeasonEngine:  safeAddr(process.env.NEXT_PUBLIC_SEASON_ENGINE),
+  SeasonRewards: safeAddr(process.env.NEXT_PUBLIC_SEASON_REWARDS),
+  CraftingSystem:safeAddr(process.env.NEXT_PUBLIC_CRAFTING),
+  PremiumPacks:  safeAddr(process.env.NEXT_PUBLIC_PREMIUM_PACKS),
+  SeasonPass:    safeAddr(process.env.NEXT_PUBLIC_SEASON_PASS),
+  TreasuryVault: safeAddr(process.env.NEXT_PUBLIC_TREASURY),
+  HLUSD:         safeAddr(process.env.NEXT_PUBLIC_HLUSD),
 } as const;
 
 /* ── Card data (mirrors deploy/01_economy.ts card configs) ──── */
