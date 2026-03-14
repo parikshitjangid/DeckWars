@@ -70,7 +70,7 @@ function BattlePageContent() {
   const [isOnChain, setIsOnChain] = useState(false);
 
   // Wager approvals
-  const { approve: approveHLUSD, isPending: isApprovePending } = useApproveHLUSD();
+  const { approve: approveHLUSD, isPending: isApprovePending, error: approveError } = useApproveHLUSD();
   
   // PvP Wager Allowance
   const hlusdAllowance = useHLUSDAllowance(CONTRACTS.BattleEngine as Address);
@@ -420,9 +420,18 @@ function BattlePageContent() {
                       Max Payout Pool: {formatEther(aiRewardPool as bigint)} HLUSD
                     </p>
                   )}
+                  {approveError && (
+                    <p className="text-red-500 text-[10px] mb-2 text-center bg-red-500/10 p-2 rounded border border-red-500/20">
+                      Error: {approveError.message || 'Approval failed'}
+                    </p>
+                  )}
+
                   {parseUnits(aiWagerInput || '0', 18) > BigInt(0) && aiAllowanceValue < parseUnits(aiWagerInput || '0', 18) ? (
                     <button
-                      onClick={() => approveHLUSD(CONTRACTS.AIBattleAgent as Address, parseUnits(aiWagerInput, 18))}
+                      onClick={() => {
+                        console.log('🟢 AI Approve Clicked for:', CONTRACTS.AIBattleAgent);
+                        approveHLUSD(CONTRACTS.AIBattleAgent as Address, parseUnits(aiWagerInput, 18));
+                      }}
                       disabled={isApprovePending}
                       className="w-full py-2 bg-blue-500 text-white font-bold rounded-xl hover:shadow-lg transition-all cursor-pointer disabled:opacity-40 text-sm"
                     >

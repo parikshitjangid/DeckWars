@@ -231,7 +231,22 @@ export function useApproveHLUSD() {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const approve = (spender: Address, amount: bigint = maxUint256) => {
-    if (!CONTRACTS.HLUSD) return;
+    console.log('💎 useApproveHLUSD: Attempting approval...', {
+      hlusd: CONTRACTS.HLUSD,
+      spender,
+      amount: amount.toString()
+    });
+    
+    if (!CONTRACTS.HLUSD) {
+      console.error('❌ useApproveHLUSD: HLUSD address is MISSING in config!');
+      return;
+    }
+    
+    if (!spender || spender === '0x...') {
+      console.error('❌ useApproveHLUSD: Spender address is INVALID!', spender);
+      return;
+    }
+
     writeContract({
       address: CONTRACTS.HLUSD as Address,
       abi: erc20Abi,
