@@ -9,7 +9,7 @@ import {
   useChallengePlayer, useAcceptBattle, useMakeMove, useClaimTimeout,
   useBattleState, usePlayerHand, useActiveBattle, useContractsReady,
   useApproveHLUSD, useHLUSDAllowance, useChallengeAI, useAIRewardPoolBalance,
-  useAIActiveBattle, useAIBattleState, useFundAIPool
+  useAIActiveBattle, useAIBattleState
 } from '@/hooks/useContracts';
 import { CONTRACTS } from '@/config/wagmi';
 import { parseUnits, formatEther, formatUnits, getAddress } from 'viem';
@@ -94,7 +94,6 @@ function BattlePageContent() {
   // AI Rewards
   const { data: aiRewardPool } = useAIRewardPoolBalance();
   const { challengeAI, isPending: isAiChallengePending } = useChallengeAI();
-  const { fund: fundAIPool, isPending: isFundingPending } = useFundAIPool();
 
   // Check for active on-chain PvP battle
   useEffect(() => {
@@ -456,24 +455,10 @@ function BattlePageContent() {
                     className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white text-sm mb-3 outline-none focus:border-amber-400"
                   />
                   {aiRewardPool !== undefined && (
-                    <div className="flex justify-between items-center mb-3">
-                      <p className={`text-xs ${BigInt(aiRewardPool as string) === BigInt(0) ? 'text-red-500 animate-pulse' : 'text-amber-500'}`}>
+                    <div className="flex justify-between items-center mb-3 text-right">
+                      <p className={`text-xs w-full ${BigInt(aiRewardPool as string) === BigInt(0) ? 'text-red-500 animate-pulse' : 'text-amber-500'}`}>
                         AI Reward Pool: {formatEther(aiRewardPool as bigint)} HLUSD
                       </p>
-                      {isConnected && (
-                        <button 
-                          onClick={() => {
-                            const amt = prompt("Amount to fund AI Pool (HLUSD):", "10");
-                            if (amt) {
-                              fundAIPool(parseUnits(amt, 18));
-                            }
-                          }}
-                          disabled={isFundingPending}
-                          className="text-[10px] bg-white/10 px-2 py-1 rounded hover:bg-white/20 text-gray-300 disabled:opacity-50"
-                        >
-                          {isFundingPending ? '⏳ Funding...' : '+ Fund Pool'}
-                        </button>
-                      )}
                     </div>
                   )}
                   {BigInt(aiRewardPool || 0) === BigInt(0) && parseUnits(aiWagerInput || '0', 18) > BigInt(0) && (

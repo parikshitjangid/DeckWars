@@ -203,6 +203,26 @@ async function main() {
   }
 
   console.log("\n🎉 Dev 2 deployment complete!\n");
+
+  // ── 9. Fund AI Reward Pool (User Request: 5 HLUSD) ───────────────────────
+  console.log("💰 Funding AI Reward Pool...");
+  try {
+    const hlUSDInstance = await ethers.getContractAt("IERC20", HLUSD_ADDRESS);
+    const fundAmount = ethers.parseUnits("5", 18);
+    
+    console.log(`   Approving 5 HLUSD for AIBattleAgent...`);
+    let tx = await hlUSDInstance.approve(aiBattleAgentAddress, fundAmount);
+    await tx.wait();
+    
+    console.log(`   Calling fundRewardPool(5)...`);
+    tx = await aiBattleAgent.fundRewardPool(fundAmount);
+    await tx.wait();
+    console.log(`   ✅ AI Reward Pool funded with 5 HLUSD!`);
+  } catch (err: any) {
+    console.warn(`   ⚠️ Automated funding failed: ${err.message}`);
+    console.warn(`   You may need to fund the AI Agent manually.`);
+  }
+
   console.log("─────────────────────────────────────────────");
   console.log("Contract         Address");
   console.log("─────────────────────────────────────────────");
