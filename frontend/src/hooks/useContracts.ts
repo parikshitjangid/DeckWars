@@ -422,6 +422,24 @@ export function useChallengeAI() {
   return { challengeAI, isPending, isConfirming, isSuccess, error, hash };
 }
 
+/** Fund the AI reward pool */
+export function useFundAIPool() {
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const cfg = contractConfig(CONTRACTS.AIBattleAgent, AIBattleAgentAbi);
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const fund = (amount: bigint) => {
+    if (!cfg) return;
+    writeContract({
+      ...cfg,
+      functionName: 'fundRewardPool',
+      args: [amount],
+    });
+  };
+
+  return { fund, isPending, isConfirming, isSuccess, error, hash };
+}
+
 /** Check AI Reward Pool */
 export function useAIRewardPoolBalance() {
   const cfg = contractConfig(CONTRACTS.AIBattleAgent, AIBattleAgentAbi);

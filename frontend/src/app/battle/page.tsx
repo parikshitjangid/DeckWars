@@ -9,7 +9,7 @@ import {
   useChallengePlayer, useAcceptBattle, useMakeMove, useClaimTimeout,
   useBattleState, usePlayerHand, useActiveBattle, useContractsReady,
   useApproveHLUSD, useHLUSDAllowance, useChallengeAI, useAIRewardPoolBalance,
-  useAIActiveBattle, useAIBattleState
+  useAIActiveBattle, useAIBattleState, useFundAIPool
 } from '@/hooks/useContracts';
 import { CONTRACTS } from '@/config/wagmi';
 import { parseUnits, formatEther, formatUnits, getAddress } from 'viem';
@@ -94,6 +94,7 @@ function BattlePageContent() {
   // AI Rewards
   const { data: aiRewardPool } = useAIRewardPoolBalance();
   const { challengeAI, isPending: isAiChallengePending } = useChallengeAI();
+  const { fund: fundAIPool, isPending: isFundingPending } = useFundAIPool();
 
   // Check for active on-chain PvP battle
   useEffect(() => {
@@ -455,8 +456,29 @@ function BattlePageContent() {
                     className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white text-sm mb-3 outline-none focus:border-amber-400"
                   />
                   {aiRewardPool !== undefined && (
-                    <p className="text-xs text-amber-500 mb-3 text-right">
-                      Max Payout Pool: {formatEther(aiRewardPool as bigint)} HLUSD
+                    <div className="flex justify-between items-center mb-3">
+                      <p className={`text-xs ${BigInt(aiRewardPool as string) === BigInt(0) ? 'text-red-500 animate-pulse' : 'text-amber-500'}`}>
+                        AI Reward Pool: {formatEther(aiRewardPool as bigint)} HLUSD
+                      </p>
+                      {isConnected && (
+                        <button 
+                          onClick={() => {
+                            const amt = prompt("Amount to fund AI Pool (HLUSD):", "10");
+                            if (amt) {
+                              fundAIPool(parseUnits(amt, 18));
+                            }
+                          }}
+                          disabled={isFundingPending}
+                          className="text-[10px] bg-white/10 px-2 py-1 rounded hover:bg-white/20 text-gray-300 disabled:opacity-50"
+                        >
+                          {isFundingPending ? '⏳ Funding...' : '+ Fund Pool'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {BigInt(aiRewardPool || 0) === BigInt(0) && parseUnits(aiWagerInput || '0', 18) > BigInt(0) && (
+                    <p className="text-red-500 text-[10px] mb-2 text-center bg-red-500/10 p-2 rounded border border-red-500/20">
+                      ⚠️ AI Pool is empty. Contract will reject wagers until funded.
                     </p>
                   )}
                   {approveError && (
@@ -468,14 +490,19 @@ function BattlePageContent() {
                   {/* Approval / Battle Buttons */}
                   {parseUnits(aiWagerInput || '0', 18) > BigInt(0) && aiAllowanceValue < parseUnits(aiWagerInput || '0', 18) && !isApproveSuccess ? (
                     <div className="space-y-2">
-                       <button
-                        onClick={() => approveHLUSD(CONTRACTS.AIBattleAgent as Address, parseUnits(aiWagerInput, 18))}
+                        <button
+                        onClick={() => {
+                          console.log('💎 Approving AI Wager:', aiWagerInput);
+                          approveHLUSD(CONTRACTS.AIBattleAgent as Address, parseUnits(aiWagerInput, 18));
+                        }}
                         disabled={isApprovePending}
                         className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all cursor-pointer disabled:opacity-40"
                       >
-                        {isApprovePending ? '⏳ Awaiting Wallet...' : '🔐 Approve HLUSD Wager'}
+                        {isApprovePending ? '⏳ Awaiting Wallet...' : '🔐 Step 1: Set Allowance'}
                       </button>
-                      <p className="text-[10px] text-gray-500 text-center">First, approve the game to use HLUSD for the wager.</p>
+                      <p className="text-[10px] text-gray-400 text-center px-4">
+                        This is a <b>permission</b> step. Your wallet shows 0 HLUSD because you are setting a limit, not sending money yet.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
