@@ -30,7 +30,7 @@ export const CONTRACTS = {
   CardNFT:       process.env.NEXT_PUBLIC_CARD_NFT       || '',
   DeckManager:   process.env.NEXT_PUBLIC_DECK_MANAGER   || '',
   BattleEngine:  process.env.NEXT_PUBLIC_BATTLE_ENGINE  || '',
-  AIBattleAgent: process.env.NEXT_PUBLIC_AI_BATTLE      || '',
+  AIBattleAgent: process.env.NEXT_PUBLIC_AI_AGENT_ADDRESS || '',
   QuestSystem:   process.env.NEXT_PUBLIC_QUEST_SYSTEM   || '',
   RankSystem:    process.env.NEXT_PUBLIC_RANK_SYSTEM    || '',
   SeasonEngine:  process.env.NEXT_PUBLIC_SEASON_ENGINE  || '',
