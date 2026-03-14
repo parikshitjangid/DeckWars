@@ -17,7 +17,16 @@ type BattlePhase = 'lobby' | 'matchmaking' | 'active' | 'result';
 type MoveType = 'attack' | 'defend' | 'special';
 
 const DEMO_HAND: CardData[] = [ALL_CARDS[6], ALL_CARDS[12], ALL_CARDS[3], ALL_CARDS[15], ALL_CARDS[9]];
-const ENEMY_CARD = ALL_CARDS[11];
+
+// Helper to shuffle any array
+const shuffle = <T,>(array: T[]): T[] => {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+};
 
 function BattlePageContent() {
   const { address, isConnected } = useAccount();
@@ -32,7 +41,7 @@ function BattlePageContent() {
   const activeBattle = useActiveBattle();
   const activeBattleId = activeBattle.data ? BigInt(String(activeBattle.data)) : BigInt(0);
   const battleState = useBattleState(activeBattleId);
-  const playerHand = usePlayerHand(activeBattleId);
+  const onChainHand = usePlayerHand(activeBattleId);
 
   // Local demo state
   const [phase, setPhase] = useState<BattlePhase>('lobby');
@@ -43,6 +52,18 @@ function BattlePageContent() {
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [turn, setTurn] = useState(1);
+  
+  // New TCG States
+  const [playerDeck, setPlayerDeck] = useState<CardData[]>([]);
+  const [playerHand, setPlayerHand] = useState<CardData[]>([]);
+  const [enemyDeck, setEnemyDeck] = useState<CardData[]>([]);
+  const [enemyHand, setEnemyHand] = useState<CardData[]>([]);
+  const [activeEnemyCard, setActiveEnemyCard] = useState<CardData | null>(null);
+  
+  // Animation/Feedback States
+  const [isShaking, setIsShaking] = useState(false);
+  const [hitFeedback, setHitFeedback] = useState<{ id: number; text: string; type: 'hit' | 'heal' | 'dmg' }[]>([]);
+  const [fatigueCount, setFatigueCount] = useState(0);
   const [opponentAddress, setOpponentAddress] = useState(initialOpponent);
   const [wagerInput, setWagerInput] = useState('0');
   const [aiWagerInput, setAiWagerInput] = useState('0');
@@ -96,6 +117,20 @@ function BattlePageContent() {
     setSelectedCard(null);
     setLog(['⚔️ Battle started! Your turn.']);
     setTurn(1);
+    setFatigueCount(0);
+
+    // Initialize Decks (shuffled full set)
+    const fullSet = shuffle([...ALL_CARDS]);
+    const pDeck = fullSet.slice(0, 15);
+    const pHand = fullSet.slice(15, 20);
+    const eDeck = shuffle([...ALL_CARDS]).slice(0, 15);
+    const eHand = shuffle([...ALL_CARDS]).slice(15, 20);
+
+    setPlayerDeck(pDeck);
+    setPlayerHand(pHand);
+    setEnemyDeck(eDeck);
+    setEnemyHand(eHand);
+    setActiveEnemyCard(eHand[0]); // Start with the first card in hand
   };
 
   const startOnChainBattle = () => {
@@ -107,60 +142,147 @@ function BattlePageContent() {
     setLog(['📡 Challenge sent on-chain. Waiting for opponent to accept...']);
   };
 
-  const makeLocalMove = (move: MoveType) => {
-    if (!selectedCard) return;
-    const card = selectedCard;
-    const cost = card.energyCost;
-    if (energy < cost) return;
-
-    let damage = 0;
-    let logMsg = '';
-
-    const hasAdvantage = (
-      (card.element === 'Fire' && ENEMY_CARD.element === 'Earth') ||
-      (card.element === 'Earth' && ENEMY_CARD.element === 'Water') ||
-      (card.element === 'Water' && ENEMY_CARD.element === 'Fire')
-    );
-
-    if (move === 'attack') {
-      damage = Math.max(1, card.attack - ENEMY_CARD.defense);
-      if (hasAdvantage) damage += 3;
-      logMsg = `🗡️ ${card.name} attacks for ${damage} dmg${hasAdvantage ? ' (Super Effective! 🔥)' : ''}`;
-    } else if (move === 'defend') {
-      logMsg = `🛡️ ${card.name} takes a defensive stance`;
-    } else if (move === 'special') {
-      damage = Math.max(1, card.attack - ENEMY_CARD.defense) * 2;
-      if (hasAdvantage) damage += 6;
-      logMsg = `💥 ${card.name} uses SPECIAL for ${damage} dmg!`;
-      setSpecialUsed(true);
-    }
-
-    const newEnemyHP = Math.max(0, enemyHP - damage);
-    setEnemyHP(newEnemyHP);
-    setEnergy(e => e - cost);
-
-    const enemyDmg = Math.max(1, ENEMY_CARD.attack - card.defense);
-    const newPlayerHP = Math.max(0, playerHP - enemyDmg);
-    setPlayerHP(newPlayerHP);
-
-    setLog(prev => [
-      ...prev,
-      `Turn ${turn}: ${logMsg}`,
-      `  ↩️ ${ENEMY_CARD.name} counters for ${enemyDmg} dmg`,
-    ]);
-
-    setSelectedCard(null);
-    setTurn(t => t + 1);
-    setEnergy(e => Math.min(5, (e - cost) + 3));
-
-    if (newEnemyHP <= 0 || newPlayerHP <= 0) setPhase('result');
+  const triggerShake = () => {
+    setIsShaking(true);
+    setTimeout(() => setIsShaking(false), 500);
   };
 
-  const handleMove = (move: MoveType) => {
-    if (isOnChain && contractsReady && selectedCard) {
-      const handIndex = DEMO_HAND.findIndex(c => c.id === selectedCard.id);
+  const addFeedback = (text: string, type: 'hit' | 'heal' | 'dmg') => {
+    const id = Date.now();
+    setHitFeedback(prev => [...prev, { id, text, type }]);
+    setTimeout(() => {
+      setHitFeedback(prev => prev.filter(f => f.id !== id));
+    }, 1500);
+  };
+
+  const drawCard = (isPlayer: boolean) => {
+    if (isPlayer) {
+      if (playerDeck.length === 0) return;
+      const newDeck = [...playerDeck];
+      const nextCard = newDeck.pop();
+      if (nextCard) {
+        setPlayerDeck(newDeck);
+        setPlayerHand(prev => [...prev, nextCard]);
+      }
+    } else {
+      if (enemyDeck.length === 0) return;
+      const newDeck = [...enemyDeck];
+      const nextCard = newDeck.pop();
+      if (nextCard) {
+        setEnemyDeck(newDeck);
+        setEnemyHand(prev => [...prev, nextCard]);
+      }
+    }
+  };
+
+  const makeLocalMove = (move: MoveType | 'pass') => {
+    if (move !== 'pass' && !selectedCard) return;
+    if (move !== 'pass' && !activeEnemyCard) return;
+
+    const card = selectedCard;
+    const enemyCard = activeEnemyCard!;
+    
+    let playerMoveLog = '';
+    let enemyMoveLog = '';
+    let pDamageToEnemy = 0;
+    let eDamageToPlayer = 0;
+    
+    // 1. Resolve Player Move
+    if (move === 'pass') {
+      playerMoveLog = '⏸️ You passed your turn to recover energy';
+      setFatigueCount(f => f + 1);
+      if (fatigueCount >= 2) {
+        const fatigueDmg = (fatigueCount - 1) * 5;
+        setPlayerHP(p => Math.max(0, p - fatigueDmg));
+        addFeedback(`-${fatigueDmg} Fatigue`, 'dmg');
+        playerMoveLog += ` (Fatigue hits for ${fatigueDmg}!)`;
+      }
+    } else {
+      setFatigueCount(0);
+      const cost = card!.energyCost;
+      if (energy < cost) return;
+      
+      const hasAdvantage = (
+        (card!.element === 'Fire' && enemyCard.element === 'Earth') ||
+        (card!.element === 'Earth' && enemyCard.element === 'Water') ||
+        (card!.element === 'Water' && enemyCard.element === 'Fire')
+      );
+
+      if (move === 'attack') {
+        pDamageToEnemy = Math.max(1, card!.attack - enemyCard.defense);
+        if (hasAdvantage) {
+          pDamageToEnemy += 3;
+          addFeedback('Super Effective! 🔥', 'hit');
+        }
+        playerMoveLog = `🗡️ ${card!.name} deals ${pDamageToEnemy} dmg`;
+      } else if (move === 'defend') {
+        playerMoveLog = `🛡️ ${card!.name} braces for impact`;
+      } else if (move === 'special') {
+        setSpecialUsed(true);
+        pDamageToEnemy = Math.max(1, card!.attack - enemyCard.defense) * 2;
+        if (hasAdvantage) pDamageToEnemy += 6;
+        playerMoveLog = `💥 ${card!.name} uses SPECIAL for ${pDamageToEnemy} dmg!`;
+        triggerShake();
+      }
+
+      setEnergy(e => Math.min(10, (e - cost) + 3));
+      setEnemyHP(h => Math.max(0, h - pDamageToEnemy));
+      if (pDamageToEnemy > 0) addFeedback(`-${pDamageToEnemy}`, 'dmg');
+
+      // Remove card from hand and draw new one
+      setPlayerHand(prev => prev.filter(c => c.id !== card!.id));
+      drawCard(true);
+    }
+
+    // 2. Resolve Enemy Counter (AI draws random card and move)
+    const eHand = [...enemyHand];
+    const aiCard = eHand[Math.floor(Math.random() * eHand.length)];
+    setActiveEnemyCard(aiCard);
+
+    // AI logic: 70% attack, 30% defend
+    const aiMove = Math.random() > 0.3 ? 'attack' : 'defend';
+    
+    const eHasAdvantage = (
+      (aiCard.element === 'Fire' && (card?.element || 'Earth') === 'Earth') ||
+      (aiCard.element === 'Earth' && (card?.element || 'Water') === 'Water') ||
+      (aiCard.element === 'Water' && (card?.element || 'Fire') === 'Fire')
+    );
+
+    if (aiMove === 'attack') {
+      eDamageToPlayer = Math.max(1, aiCard.attack - (move === 'defend' ? (card?.defense || 0) + 2 : (card?.defense || 0)));
+      if (eHasAdvantage) eDamageToPlayer += 2;
+      enemyMoveLog = `↩️ ${aiCard.name} counters for ${eDamageToPlayer} dmg`;
+      if (move !== 'defend') triggerShake();
+    } else {
+      enemyMoveLog = `↩️ ${aiCard.name} takes a defensive stance`;
+    }
+
+    setPlayerHP(p => Math.max(0, p - eDamageToPlayer));
+    if (eDamageToPlayer > 0) addFeedback(`-${eDamageToPlayer} HP`, 'dmg');
+
+    setLog(prev => [...prev, `Turn ${turn}: ${playerMoveLog}`, `  ${enemyMoveLog}`]);
+    
+    // Cycle AI hand
+    setEnemyHand(prev => prev.filter(c => c.id !== aiCard.id));
+    drawCard(false);
+
+    setTurn(t => t + 1);
+    setSelectedCard(null);
+
+    // Check Win/Loss
+    if (enemyHP - pDamageToEnemy <= 0 || playerHP - eDamageToPlayer <= 0) {
+      setPhase('result');
+    }
+  };
+
+  const handleMove = (move: MoveType | 'pass') => {
+    if (isOnChain && contractsReady && selectedCard && move !== 'pass') {
+      const onChainData = onChainHand.data as any[];
+      const handIndex = onChainData?.findIndex((c: any) => BigInt(c.id) === BigInt(selectedCard.id)) ?? -1;
       const moveType = move === 'attack' ? 0 : move === 'defend' ? 1 : 2;
-      makeMoveOnChain(activeBattleId, BigInt(handIndex), moveType);
+      if (handIndex !== -1) {
+        makeMoveOnChain(activeBattleId, BigInt(handIndex), moveType);
+      }
     } else {
       makeLocalMove(move);
     }
@@ -190,7 +312,27 @@ function BattlePageContent() {
   const displayTurn = isOnChain && onChainHP ? onChainHP.turnNumber : turn;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+    <div className={`max-w-5xl mx-auto px-4 sm:px-6 py-6 transition-transform duration-100 ${isShaking ? 'shake-anim' : ''}`}>
+      <style jsx global>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-10px); }
+          50% { transform: translateX(10px); }
+          75% { transform: translateX(-10px); }
+        }
+        .shake-anim {
+          animation: shake 0.5s ease-in-out;
+        }
+        @keyframes fade-up {
+          0% { opacity: 0; transform: translateY(0); }
+          20% { opacity: 1; transform: translateY(-20px); }
+          100% { opacity: 0; transform: translateY(-40px); }
+        }
+        .animate-fade-up {
+          animation: fade-up 1.5s ease-out forwards;
+        }
+      `}</style>
+
       <h1 className="text-3xl font-bold mb-6">
         <span className="mr-2">⚔️</span> Battle Arena
         {isOnChain && <span className="ml-2 text-xs text-green-400 font-normal">🟢 On-Chain</span>}
@@ -388,7 +530,22 @@ function BattlePageContent() {
           )}
 
           {/* HP Bars */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+            {/* Feedback system */}
+            <div className="absolute inset-0 pointer-events-none z-50">
+              {hitFeedback.map(f => (
+                <div 
+                  key={f.id} 
+                  className={`absolute left-1/2 -ml-4 font-black text-2xl animate-fade-up ${
+                    f.type === 'dmg' ? 'text-red-500' : 'text-green-500'
+                  }`}
+                  style={{ top: '20%' }}
+                >
+                  {f.text}
+                </div>
+              ))}
+            </div>
+
             <div className="bg-white/5 rounded-xl p-4 border border-white/5">
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-cyan-400 font-bold">You</span>
@@ -423,29 +580,32 @@ function BattlePageContent() {
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-2">
               <span className="text-yellow-400 text-sm font-bold">⚡ Energy:</span>
-              <div className="flex gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
+              <div className="flex gap-1 flex-wrap">
+                {Array.from({ length: 10 }).map((_, i) => (
                   <div
                     key={i}
-                    className={`w-8 h-3 rounded-full transition-all ${
-                      i < energy ? 'bg-yellow-400 energy-active' : 'bg-gray-700'
+                    className={`w-6 h-3 rounded-full transition-all ${
+                      i < energy ? 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'bg-gray-800'
                     }`}
                   />
                 ))}
               </div>
               <span className="text-gray-400 text-xs ml-auto">Turn {displayTurn}</span>
             </div>
+            {fatigueCount > 1 && (
+              <p className="text-[10px] text-red-500 font-bold mt-1">⚠️ FATIGUE WARNING: passing turns will drain HP!</p>
+            )}
           </div>
 
           {/* Enemy Card Display */}
-          {!isOnChain && (
+          {!isOnChain && activeEnemyCard && (
             <div className="text-center py-4">
               <p className="text-gray-500 text-xs mb-2">Enemy&apos;s Active Card</p>
-              <div className="inline-flex items-center gap-3 bg-red-500/10 rounded-xl px-6 py-3 border border-red-500/20">
-                <span className="text-2xl">{ELEMENT_ICONS[ENEMY_CARD.element]}</span>
+              <div className="inline-flex items-center gap-3 bg-red-500/10 rounded-xl px-6 py-3 border border-red-500/20 animate-pulse">
+                <span className="text-2xl">{ELEMENT_ICONS[activeEnemyCard.element]}</span>
                 <div className="text-left">
-                  <p className="text-white font-bold text-sm">{ENEMY_CARD.name}</p>
-                  <p className="text-gray-400 text-xs">⚔ {ENEMY_CARD.attack} | 🛡 {ENEMY_CARD.defense}</p>
+                  <p className="text-white font-bold text-sm">{activeEnemyCard.name}</p>
+                  <p className="text-gray-400 text-xs">⚔ {activeEnemyCard.attack} | 🛡 {activeEnemyCard.defense}</p>
                 </div>
               </div>
             </div>
@@ -453,9 +613,12 @@ function BattlePageContent() {
 
           {/* Hand */}
           <div>
-            <p className="text-gray-400 text-sm mb-2">Your Hand — tap a card to select it</p>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {DEMO_HAND.map((card) => {
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-gray-400 text-sm">Your Hand — tap a card to select it</p>
+              <p className="text-gray-600 text-[10px] font-bold uppercase tracking-wider">Deck: {playerDeck.length} left</p>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {(isOnChain ? DEMO_HAND : playerHand).map((card) => {
                 const isSelectedCard = selectedCard?.id === card.id;
                 const canAfford = energy >= card.energyCost;
                 return (
@@ -467,7 +630,7 @@ function BattlePageContent() {
                       isSelectedCard
                         ? 'bg-orange-500/20 border-orange-400 scale-105 shadow-lg shadow-orange-500/20'
                         : canAfford
-                          ? 'bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer'
+                          ? 'bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer hover:-translate-y-1'
                           : 'bg-white/[0.02] border-white/5 opacity-40 cursor-not-allowed'
                     }`}
                   >
@@ -485,18 +648,18 @@ function BattlePageContent() {
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <button
               onClick={() => handleMove('attack')}
               disabled={!selectedCard || isMovePending || (isOnChain && !isMyTurn)}
-              className="py-3 bg-red-500/20 text-red-300 font-bold rounded-xl border border-red-500/20 hover:bg-red-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              className="py-3 bg-gradient-to-br from-red-500/30 to-red-600/10 text-red-100 font-bold rounded-xl border border-red-500/30 hover:shadow-lg hover:shadow-red-500/10 transition-all disabled:opacity-30 cursor-pointer"
             >
               {isMovePending ? '⏳' : '🗡️'} Attack
             </button>
             <button
               onClick={() => handleMove('defend')}
               disabled={!selectedCard || isMovePending || (isOnChain && !isMyTurn)}
-              className="py-3 bg-blue-500/20 text-blue-300 font-bold rounded-xl border border-blue-500/20 hover:bg-blue-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              className="py-3 bg-gradient-to-br from-blue-500/30 to-blue-600/10 text-blue-100 font-bold rounded-xl border border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all disabled:opacity-30 cursor-pointer"
             >
               🛡️ Defend
             </button>
@@ -506,10 +669,17 @@ function BattlePageContent() {
               className={`py-3 font-bold rounded-xl border transition-all cursor-pointer ${
                 specialUsed
                   ? 'bg-gray-800 text-gray-600 border-gray-700 cursor-not-allowed'
-                  : 'bg-purple-500/20 text-purple-300 border-purple-500/20 hover:bg-purple-500/30 disabled:opacity-30 disabled:cursor-not-allowed'
+                  : 'bg-gradient-to-br from-purple-500/30 to-purple-600/10 text-purple-100 border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 disabled:opacity-30'
               }`}
             >
-              💥 Special {specialUsed ? '(Used)' : ''}
+              💥 Ultimate {specialUsed ? '(Used)' : ''}
+            </button>
+            <button
+              onClick={() => handleMove('pass')}
+              disabled={isMovePending || (isOnChain && !isMyTurn)}
+              className="py-3 bg-gradient-to-br from-gray-500/30 to-gray-600/10 text-gray-100 font-bold rounded-xl border border-gray-500/30 hover:bg-gray-500/40 transition-all disabled:opacity-30 cursor-pointer"
+            >
+              ⏸️ Pass Turn
             </button>
           </div>
 
