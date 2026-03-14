@@ -9,7 +9,10 @@ import {
   useChallengePlayer, useAcceptBattle, useMakeMove, useClaimTimeout,
   useBattleState, usePlayerHand, useActiveBattle, useContractsReady,
   useApproveHLUSD, useHLUSDAllowance, useChallengeAI, useAIRewardPoolBalance,
-  useAIActiveBattle, useAIBattleState
+  useAIActiveBattle,
+  useAIBattleState,
+  useMintHLUSD,
+  useHLUSDBalance,
 } from '@/hooks/useContracts';
 import { CONTRACTS } from '@/config/wagmi';
 import { parseUnits, formatEther, formatUnits, getAddress } from 'viem';
@@ -88,12 +91,16 @@ function BattlePageContent() {
   const allowanceValue = hlusdAllowance.data ? (hlusdAllowance.data as bigint) : BigInt(0);
 
   // AI Wager Allowance
-  const aiHlusdAllowance = useHLUSDAllowance(CONTRACTS.AIBattleAgent as Address);
-  const aiAllowanceValue = aiHlusdAllowance.data ? (aiHlusdAllowance.data as bigint) : BigInt(0);
+  const { data: aiAllowance, refetch: refetchAiAllowance } = useHLUSDAllowance(CONTRACTS.AIBattleAgent as Address);
+  const aiAllowanceValue = aiAllowance ? BigInt(aiAllowance as unknown as string) : BigInt(0);
 
   // AI Rewards
   const { data: aiRewardPool } = useAIRewardPoolBalance();
-  const { challengeAI, isPending: isAiChallengePending } = useChallengeAI();
+  const { challengeAI, isPending: isAiChallengePending, isSuccess: isAiChallengeSuccess, error: aiChallengeError } = useChallengeAI();
+
+  // Test Tokens
+  const { mint: mintHLUSD, isPending: isMintPending } = useMintHLUSD();
+  const { data: userHlusdBalance, refetch: refetchBalance } = useHLUSDBalance();
 
   // Check for active on-chain PvP battle
   useEffect(() => {
@@ -133,9 +140,10 @@ function BattlePageContent() {
         return;
       }
       
-      if (aiAllowanceValue < wagerWei) {
-        alert("Please approve the wager transfer first.");
-        return;
+      if (aiAllowanceValue < wagerWei && !isApproveSuccess) {
+        // Try one last refetch before blocking
+        refetchAiAllowance();
+        // If still low, we don't block with alert, we let the UI handle it via disabled state or msg
       }
 
       console.log('⚔️ Starting On-Chain AI Battle with wager:', formatUnits(wagerWei, 18), 'HLUSD');
@@ -454,21 +462,49 @@ function BattlePageContent() {
                     placeholder="0"
                     className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white text-sm mb-3 outline-none focus:border-amber-400"
                   />
+                  <div className="flex justify-between items-center mb-1 text-[10px]">
+                    <span className="text-gray-400">Your Balance:</span>
+                    <span className="text-white font-mono">{userHlusdBalance !== undefined ? formatEther(userHlusdBalance as bigint) : '...'} HLUSD</span>
+                  </div>
+                  
                   {aiRewardPool !== undefined && (
-                    <div className="flex justify-between items-center mb-3 text-right">
-                      <p className={`text-xs w-full ${BigInt(aiRewardPool as string) === BigInt(0) ? 'text-red-500 animate-pulse' : 'text-amber-500'}`}>
-                        AI Reward Pool: {formatEther(aiRewardPool as bigint)} HLUSD
-                      </p>
+                    <div className="flex justify-between items-center mb-2 text-[10px]">
+                      <span className="text-gray-400">AI Pool:</span>
+                      <span className={`${BigInt(aiRewardPool as string) === BigInt(0) ? 'text-red-500 font-bold' : 'text-amber-500'} font-mono`}>
+                        {formatEther(aiRewardPool as bigint)} HLUSD
+                      </span>
                     </div>
                   )}
-                  {BigInt(aiRewardPool || 0) === BigInt(0) && parseUnits(aiWagerInput || '0', 18) > BigInt(0) && (
-                    <p className="text-red-500 text-[10px] mb-2 text-center bg-red-500/10 p-2 rounded border border-red-500/20">
-                      ⚠️ AI Pool is empty. Contract will reject wagers until funded.
-                    </p>
+
+                  {BigInt(userHlusdBalance || 0) < parseUnits(aiWagerInput || '0', 18) && parseUnits(aiWagerInput || '0', 18) > BigInt(0) && (
+                    <div className="text-red-400 text-[10px] mb-2 text-center bg-red-500/10 p-2 rounded border border-red-500/20">
+                      <p>❌ You need more HLUSD to make this bet.</p>
+                      <button 
+                         onClick={() => mintHLUSD('100')}
+                         disabled={isMintPending}
+                         className="mt-1 text-blue-400 underline cursor-pointer hover:text-blue-300"
+                      >
+                         {isMintPending ? 'Minting...' : 'Get 100 Test HLUSD'}
+                      </button>
+                    </div>
                   )}
+
+                  {BigInt(aiRewardPool || 0) === BigInt(0) && parseUnits(aiWagerInput || '0', 18) > BigInt(0) && (
+                    <div className="text-red-500 text-[10px] mb-2 text-center bg-red-500/10 p-2 rounded border border-red-500/20">
+                      <p className="font-bold">⚠️ AI Pool is empty.</p>
+                      <p>The contract will reject wagers until the developer funds it.</p>
+                    </div>
+                  )}
+
                   {approveError && (
                     <p className="text-red-500 text-[10px] mb-2 text-center bg-red-500/10 p-2 rounded border border-red-500/20">
-                      Error: {approveError.message || 'Approval failed'}
+                      Approval Error: {approveError.message.includes('User denied') ? 'Transaction rejected' : 'Check balance/gas'}
+                    </p>
+                  )}
+
+                  {aiChallengeError && (
+                    <p className="text-red-500 text-[10px] mb-2 text-center bg-red-500/10 p-2 rounded border border-red-500/20">
+                      Battle Error: {aiChallengeError.message.includes('Insufficient') ? 'Reward Pool is empty' : 'Check wallet/balance'}
                     </p>
                   )}
 
@@ -485,19 +521,24 @@ function BattlePageContent() {
                       >
                         {isApprovePending ? '⏳ Awaiting Wallet...' : '🔐 Step 1: Set Allowance'}
                       </button>
-                      <p className="text-[10px] text-gray-400 text-center px-4">
-                        This is a <b>permission</b> step. Your wallet shows 0 HLUSD because you are setting a limit, not sending money yet.
+                      <p className="text-[10px] text-gray-400 text-center px-4 leading-tight">
+                        <b>Step 1: Permission.</b> Your wallet will show <b>0 HLUSD</b> for this step. This just gives the game permission to use your tokens.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {isApproveSuccess && aiAllowanceValue < parseUnits(aiWagerInput || '0', 18) && (
-                        <p className="text-green-400 text-[10px] text-center font-bold mb-1">✅ Approval Confirmed! Ready to play.</p>
+                      {isApproveSuccess && (
+                        <p className="text-green-400 text-[10px] text-center font-bold mb-1">✅ Permission Granted! Now start the battle.</p>
+                      )}
+                      {parseUnits(aiWagerInput || '0', 18) > BigInt(0) && (
+                         <p className="text-[10px] text-orange-400 text-center px-4 leading-tight">
+                            <b>Step 2: Battle.</b> The 1 HLUSD wager will be sent in this transaction.
+                         </p>
                       )}
                       <button
                         onClick={startDemoBattle}
                         disabled={isAiChallengePending}
-                        className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-black font-black rounded-xl hover:shadow-lg hover:shadow-orange-500/40 transition-all cursor-pointer"
+                        className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-black font-black rounded-xl hover:shadow-lg hover:shadow-orange-500/40 transition-all cursor-pointer disabled:opacity-50"
                       >
                         {isAiChallengePending ? '⏳ Creating Match...' : (parseUnits(aiWagerInput || '0', 18) > BigInt(0) ? '⚔️ Start Battle (Wager)' : '🤖 Start Battle (Free)')}
                       </button>

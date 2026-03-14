@@ -300,6 +300,36 @@ export function useHLUSDAllowance(spender: Address) {
   } : undefined);
 }
 
+/** Mint test HLUSD tokens (Mock only) */
+export function useMintHLUSD() {
+  const { address } = useAccount();
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const mint = (amount: string = '100') => {
+    if (!CONTRACTS.HLUSD || !address) return;
+    writeContract({
+      address: CONTRACTS.HLUSD as Address,
+      abi: [
+        {
+          "inputs": [
+            { "name": "account", "type": "address" },
+            { "name": "amount", "type": "uint256" }
+          ],
+          "name": "mint",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      functionName: 'mint',
+      args: [address, parseEther(amount)],
+    });
+  };
+
+  return { mint, isPending, isConfirming, isSuccess, error, hash };
+}
+
 // ─────────────────────────────────────────────────────────────────
 // RankSystem hooks
 // ─────────────────────────────────────────────────────────────────
