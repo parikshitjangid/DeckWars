@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-card: #12121a;
+  --bg-elevated: #1a1a2e;
+  --accent-purple: #6c63ff;
+  --accent-gold: #f5c518;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0b0;
+  --fire-color: #ff4d4d;
+  --water-color: #4d9fff;
+  --earth-color: #4daa57;
+  --common-color: #9e9e9e;
+  --uncommon-color: #4d9fff;
+  --rare-color: #a855f7;
+  --epic-color: #f97316;
+  --legendary-color: #f5c518;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter",
+    sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.card-base {
+  border-radius: 12px;
+  padding: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.card-base:hover {
+  transform: scale(1.05);
+}
+
+.card-fire {
+  background: linear-gradient(135deg, #1a0a0a, #3d0f0f);
+}
+
+.card-water {
+  background: linear-gradient(135deg, #0a0a1a, #0f1f3d);
+}
+
+.card-earth {
+  background: linear-gradient(135deg, #0a1a0a, #0f3d1f);
+}
+
+.rarity-common {
+  border: 2px solid var(--common-color);
+}
+
+.rarity-uncommon {
+  border: 2px solid var(--uncommon-color);
+}
+
+.rarity-rare {
+  border: 2px solid var(--rare-color);
+}
+
+.rarity-epic {
+  border: 2px solid var(--epic-color);
+}
+
+.rarity-legendary {
+  border: 2px solid transparent;
+  background-image: linear-gradient(135deg, #1a0a0a, #3d0f0f),
+    linear-gradient(120deg, #f5c518, #fffbcc);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    box-shadow: 0 0 12px rgba(245, 197, 24, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(245, 197, 24, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(245, 197, 24, 0.2);
+  }
+}
+
+.navbar-backdrop {
+  background: rgba(18, 18, 26, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #2a2a3a;
+  border-radius: 9999px;
+}
+

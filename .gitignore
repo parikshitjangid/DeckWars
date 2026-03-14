@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Env and keys
+.env
+.env.local
+*.pem
+
+# Hardhat
+cache/
+artifacts/
+coverage/
+coverage.json
+
+# Build
+frontend/dist/
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Vite
+frontend/.vite/
