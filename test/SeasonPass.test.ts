@@ -32,7 +32,7 @@ describe("SeasonPass", () => {
         // Deploy CardNFT
         const CardFactory = await ethers.getContractFactory("CardNFT");
         cardNFT = await CardFactory.deploy("https://api.deckwars.io/metadata/{id}.json") as CardNFT;
-        await cardNFT.setCardStats(6, 90, 65, 70, 1); // Rare card for milestone
+        await cardNFT.setCardStats(6, 6, 5, 1, 1); // Rare card for milestone
 
         // Deploy SeasonPass
         const PassFactory = await ethers.getContractFactory("SeasonPass");
