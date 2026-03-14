@@ -148,6 +148,15 @@ contract AIBattleAgent is Ownable, ReentrancyGuardLocal {
         emit RewardPoolFunded(msg.sender, amount);
     }
 
+    /**
+     * @notice Withdraw HLUSD from the pool. Only owner (developer).
+     * @param amount  Amount to withdraw.
+     * @param to      Recipient address.
+     */
+    function withdrawHLUSD(uint256 amount, address to) external onlyOwner {
+        require(hlUSD.transfer(to, amount), "Transfer failed");
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Core
     // ─────────────────────────────────────────────────────────────────────────

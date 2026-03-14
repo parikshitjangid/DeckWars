@@ -8,10 +8,11 @@ import { ALL_CARDS, ELEMENT_ICONS, type CardData } from '@/config/wagmi';
 import {
   useChallengePlayer, useAcceptBattle, useMakeMove, useClaimTimeout,
   useBattleState, usePlayerHand, useActiveBattle, useContractsReady,
-  useApproveHLUSD, useHLUSDAllowance, useChallengeAI, useAIRewardPoolBalance
+  useApproveHLUSD, useHLUSDAllowance, useChallengeAI, useAIRewardPoolBalance,
+  useAIActiveBattle, useAIBattleState
 } from '@/hooks/useContracts';
 import { CONTRACTS } from '@/config/wagmi';
-import { parseUnits, formatEther, formatUnits } from 'viem';
+import { parseUnits, formatEther, formatUnits, getAddress } from 'viem';
 
 type BattlePhase = 'lobby' | 'matchmaking' | 'active' | 'result';
 type MoveType = 'attack' | 'defend' | 'special';
@@ -42,6 +43,11 @@ function BattlePageContent() {
   const activeBattleId = activeBattle.data ? BigInt(String(activeBattle.data)) : BigInt(0);
   const battleState = useBattleState(activeBattleId);
   const onChainHand = usePlayerHand(activeBattleId);
+
+  // AI Active Battle detection
+  const aiActiveBattle = useAIActiveBattle();
+  const aiActiveBattleId = aiActiveBattle.data ? BigInt(String(aiActiveBattle.data)) : BigInt(0);
+  const aiBattleState = useAIBattleState(aiActiveBattleId);
 
   // Local demo state
   const [phase, setPhase] = useState<BattlePhase>('lobby');
@@ -89,7 +95,7 @@ function BattlePageContent() {
   const { data: aiRewardPool } = useAIRewardPoolBalance();
   const { challengeAI, isPending: isAiChallengePending } = useChallengeAI();
 
-  // Check for active on-chain battle
+  // Check for active on-chain PvP battle
   useEffect(() => {
     if (activeBattleId > BigInt(0) && battleState.data) {
       setIsOnChain(true);
@@ -101,18 +107,46 @@ function BattlePageContent() {
     }
   }, [activeBattleId, battleState.data]);
 
+  // Check for active on-chain AI battle
+  useEffect(() => {
+    if (aiActiveBattleId > BigInt(0) && aiBattleState.data) {
+      // If we find an AI battle, we treat it as an active battle session
+      setIsOnChain(true);
+      setPhase('active');
+      setLog(prev => [...prev, '🤖 On-chain AI Battle detected! Lets play.']);
+      
+      // Initialize local state for the AI play session (even though wager is on-chain)
+      setPlayerHP(100);
+      setEnemyHP(100);
+      setEnergy(5);
+      setTurn(1);
+    }
+  }, [aiActiveBattleId, aiBattleState.data]);
+
   const startDemoBattle = () => {
-    // If wager is set, do the real on-chain AI battle
-    if (parseUnits(aiWagerInput || '0', 18) > BigInt(0) || contractsReady) {
-      if (!contractsReady) return;
-      const wagerWei = parseUnits(aiWagerInput || '0', 18);
-      // deckId 0, difficulty 1 (Medium), wagerAmount
+    const wagerWei = parseUnits(aiWagerInput || '0', 18);
+    
+    // If wager is set > 0, do the real on-chain AI battle
+    if (wagerWei > BigInt(0)) {
+      if (!contractsReady) {
+        alert("Contracts not ready. Please connect wallet.");
+        return;
+      }
+      
+      if (aiAllowanceValue < wagerWei) {
+        alert("Please approve the wager transfer first.");
+        return;
+      }
+
+      console.log('⚔️ Starting On-Chain AI Battle with wager:', formatUnits(wagerWei, 18), 'HLUSD');
       challengeAI(BigInt(0), 1, wagerWei);
       setPhase('matchmaking');
-      setLog(['📡 AI Challenge sent on-chain. Generating agent move...']);
+      setLog(['📡 AI Challenge sent on-chain. Wager: ' + aiWagerInput + ' HLUSD']);
       return;
     }
 
+    // Otherwise, start a free local demo battle
+    console.log('🤖 Starting Local Demo Battle (Free)');
     setIsOnChain(false);
     setPhase('active');
     setPlayerHP(100);

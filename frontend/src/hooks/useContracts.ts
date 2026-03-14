@@ -431,3 +431,26 @@ export function useAIRewardPoolBalance() {
     query: { enabled: !!cfg },
   } : undefined);
 }
+
+/** Check if player has an active AI battle */
+export function useAIActiveBattle() {
+  const { address } = useAccount();
+  const cfg = contractConfig(CONTRACTS.AIBattleAgent, AIBattleAgentAbi);
+  return useReadContract(cfg ? {
+    ...cfg,
+    functionName: 'activeBattle',
+    args: [address!],
+    query: { enabled: !!address && !!cfg, refetchInterval: 5000 },
+  } : undefined);
+}
+
+/** Read AI battle state */
+export function useAIBattleState(battleId: bigint) {
+  const cfg = contractConfig(CONTRACTS.AIBattleAgent, AIBattleAgentAbi);
+  return useReadContract(cfg ? {
+    ...cfg,
+    functionName: 'getBattle',
+    args: [battleId],
+    query: { enabled: !!cfg && battleId > BigInt(0), refetchInterval: 5000 },
+  } : undefined);
+}
